@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unisolv 2.0 Operator Training</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+    <style>
+        :root {
+            --theme-dark: #111827;
+            --theme-accent: #E4002B;
+            --theme-light-gray: #F3F4F6;
+            --theme-medium-gray: #9CA3AF;
+            --theme-dark-gray: #374151;
+            --text-light: #F9FAFB;
+            --text-dark: #1F2937;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--theme-light-gray);
+            color: var(--text-dark);
+            overflow: hidden; /* Prevent scrolling during transitions */
+        }
+        #app-container {
+            display: grid;
+            grid-template-columns: 0fr 1fr;
+            transition: grid-template-columns 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #app-container.training-active {
+            grid-template-columns: 320px 1fr;
+        }
+        .sidebar {
+            background-color: var(--theme-dark);
+            color: var(--text-light);
+            transform: translateX(-100%);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #app-container.training-active .sidebar {
+            transform: translateX(0);
+        }
+        .sidebar-link { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.5rem; border-left: 4px solid transparent; color: var(--theme-medium-gray); transition: background-color 0.2s, color 0.2s, border-left-color 0.2s; text-decoration: none; font-weight: 500; cursor: pointer; }
+        .sidebar-link:hover { background-color: var(--theme-dark-gray); color: var(--text-light); }
+        .sidebar-link.active { background-color: #000; color: var(--text-light); border-left-color: var(--theme-accent); font-weight: 700; }
+        .sidebar-link.disabled { color: #4B5563; cursor: not-allowed; pointer-events: none; opacity: 0.6; }
+        .sidebar-link.unlocked { color: #34D399; font-weight: 600; pointer-events: auto; cursor: pointer; }
+        .sidebar-submenu { list-style: none; padding-left: 1rem; background-color: rgba(0,0,0,0.2); max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+        .sidebar-submenu.expanded { max-height: 500px; }
+        .sidebar-submenu .sidebar-link { padding-left: 2.5rem; font-size: 0.875rem; }
+        .toggle-icon { transition: transform 0.3s ease-in-out; }
+        .sidebar-link.expanded .toggle-icon { transform: rotate(90deg); }
+
+        .content-section h2 { font-size: 2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--theme-accent); display: flex; justify-content: space-between; align-items: center; }
+        .content-section h3 { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #D1D5DB; padding-bottom: 0.5rem; }
+        .content-section h4 { font-size: 1.25rem; font-weight: 700; color: var(--theme-dark-gray); margin-top: 2rem; margin-bottom: 0.75rem; }
+        .content-section p, .content-section ul, .content-section ol { margin-bottom: 1rem; line-height: 1.7; }
+        .content-section ul { list-style-type: disc; margin-left: 1.5rem; }
+        .content-section ol { list-style-type: decimal; margin-left: 1.5rem; }
+        .content-section li { margin-bottom: 0.5rem; }
+        .content-section strong { font-weight: 700; color: #000; }
+        .content-section code { font-family: monospace; background-color: #E5E7EB; padding: 0.2rem 0.4rem; border-radius: 0.25rem; color: var(--theme-accent); font-weight: 600; }
+        
+        #cover-page {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: white;
+            z-index: 20;
+            opacity: 1;
+            transition: opacity 0.6s ease-out, visibility 0.6s;
+        }
+        #app-container.training-active #cover-page {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #begin-training-btn {
+            background-color: var(--theme-accent);
+            color: white;
+            padding: 0.75rem 2.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        #begin-training-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        #begin-training-btn svg { transition: transform 0.2s ease-out; }
+        #begin-training-btn:hover svg { transform: translateX(4px); }
+        
+        .gemini-btn, .quiz-btn, .ai-feature-btn { background-color: #f8f9fa; color: var(--theme-dark-gray); border: 1px solid #D1D5DB; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; border-radius: 0.375rem; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .gemini-btn:hover, .quiz-btn:hover, .ai-feature-btn:hover { background-color: #e9ecef; border-color: #adb5bd; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .gemini-btn { padding: 0.25rem 0.75rem; font-size: 0.75rem; border-radius: 9999px; }
+        .gemini-btn svg, .ai-feature-btn svg { width: 16px; height: 16px; }
+        #quizCard { background-color: #ffffff; border-radius: 0.5rem; padding: 2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        .question-box { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .question-text { font-weight: 700; font-size: 1.125rem; color: #111827; text-align: left; margin-bottom: 1rem; }
+        .options-list { list-style: none; padding: 0; }
+        .option-item { margin-bottom: 0.5rem; }
+        .option-item label { display: block; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-item input:checked + label { background-color: #e7e5ff; border-color: var(--theme-accent); color: var(--text-dark); font-weight: 600; }
+        .quiz-navigation { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;}
+        #quizProgress { font-size: 0.875rem; color: #6B7280; font-weight: 500;}
+        .quiz-btn, .quiz-nav-btn { background-color: var(--theme-accent); color: white; border: none; }
+        .quiz-btn:hover, .quiz-nav-btn:hover { opacity: 0.9; background-color: var(--theme-accent); }
+        .quiz-nav-btn.secondary { background-color: #6c757d; }
+        .results-view .question-box { margin-top: 1.5rem; }
+        .results-view .question-box.correct-answer { border-left: 4px solid #10B981; }
+        .results-view .question-box.incorrect-answer { border-left: 4px solid #EF4444; }
+        .results-view .option-item label.correct { background-color: #d1fae5; border-color: #a7f3d0;}
+        .results-view .option-item label.incorrect { background-color: #fee2e2; border-color: #fecaca;}
+        #quizResult { margin-top: 2rem; padding: 1.5rem; border-radius: 0.5rem; text-align: center; }
+        #quizResult.pass { background-color: #d4edda; color: #155724; }
+        #quizResult.fail { background-color: #f8d7da; color: #721c24; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content { background-color: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 1000px; transform: scale(0.9); transition: transform 0.3s; max-height: 80vh; overflow-y: auto; }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e5; padding-bottom: 1rem; margin-bottom: 1rem; }
+        .modal-title { font-size: 1.5rem; font-weight: 600; color: var(--text-dark); }
+        .modal-close-btn { background: none; border: none; font-size: 2rem; cursor: pointer; color: #888; line-height: 1; }
+        .modal-body { line-height: 1.7; }
+        .modal-body strong { color: var(--text-dark); }
+        .modal-body ul { list-style-type: disc; margin-left: 1.5rem; margin-top: 1rem; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--theme-accent); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .mermaid { cursor: zoom-in; transition: transform 0.2s ease-out; }
+        .mermaid:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="text-dark">
+    <div id="app-container" class="h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-full md:w-80 flex-shrink-0 flex flex-col">
+            <!-- Simplified Sidebar Header -->
+            <div class="px-6 py-4 flex flex-col items-center border-b border-gray-700">
+                <h2 class="text-2xl font-bold text-white tracking-wider">Claim Settlement</h2>
+            </div>
+            <nav id="sidebarNav" class="flex-grow overflow-y-auto">
+                <!-- Sidebar links are dynamically injected -->
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto" id="mainContent">
+            <!-- Cover Page -->
+            <div id="cover-page" class="flex flex-col items-center justify-center p-8">
+                <div class="text-center w-full max-w-4xl">
+                    <div class="flex items-center justify-center gap-8 md:gap-12 mb-12">
+                         <svg class="h-28 md:h-32" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" aria-label="Unisolv Logo" role="img">
+                            <text x="50%" y="70" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="bold" font-size="90" fill="#E4002B">U</text>
+                            <text x="50%" y="105" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="bold" font-size="28" fill="#1a1a1a">UNIS<tspan fill="#E4002B">+</tspan>LV</text>
+                        </svg>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 tracking-tight leading-tight uppercase" style="font-family: 'Poppins', sans-serif;">Unisolv 2.0 Operator Certification Program</h1>
+                    <h2 class="mt-4 text-2xl md:text-3xl font-semibold text-gray-500 uppercase tracking-widest">Claims Settlement</h2>
+                    <div class="mt-20">
+                        <button id="begin-training-btn" class="inline-flex items-center gap-3">
+                            BEGIN TRAINING
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Training Content Wrapper -->
+            <div id="content-wrapper" class="p-6 md:p-10 opacity-0 transition-opacity duration-500">
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                    <div id="dynamicContentArea"></div>
+                    <footer class="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
+                        <p class="text-left text-xs text-gray-500">Unisolv 2.0 Operator Certification Program</p>
+                        <svg class="h-20" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" aria-label="Unisolv Logo" role="img">
+                            <text x="50%" y="70" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="bold" font-size="90" fill="#E4002B">U</text>
+                            <text x="50%" y="105" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="bold" font-size="28" fill="#1a1a1a">UNIS<tspan fill="#E4002B">+</tspan>LV</text>
+                        </svg>
+                    </footer>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="geminiModal" class="modal-overlay"></div>
+    <div id="sectionTemplates" style="display: none;">
+        <!-- AI Feature Buttons Template -->
+        <div id="ai-features-template" class="mt-8 pt-6 border-t border-dashed border-gray-300 flex items-center gap-4">
+            <button class="ai-feature-btn" data-ai-action="summarize"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75z" clip-rule="evenodd" /></svg> Summarize</button>
+            <button class="ai-feature-btn" data-ai-action="scenario"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M14.73 15.23a.75.75 0 011.04-1.08l3.5 3.25a.75.75 0 010 1.08l-3.5 3.25a.75.75 0 11-1.04-1.08l2.21-2.04H5.75a.75.75 0 010-1.5h11.19l-2.21-2.04z" clip-rule="evenodd" /><path d="M5.27 4.77a.75.75 0 01-1.04 1.08l-3.5-3.25a.75.75 0 010-1.08l3.5-3.25a.75.75 0 111.04 1.08L3.06 4.25h11.19a.75.75 0 010 1.5H3.06l2.21 2.04z" clip-rule="evenodd" /></svg> Simulate Scenario</button>
+        </div>
+        
+        <template id="content-workflows">
+             <h2 id="workflows_anchor"><span>System Workflows</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+             <p>Before using the module, it's essential to understand the high-level data flow and system interactions.</p>
+             <h4>Context Diagram</h4>
+             <div class="bg-gray-50 p-4 rounded-lg shadow-inner overflow-x-auto">
+                <pre class="mermaid" id="context-diagram">
+                graph TD
+                    subgraph External Systems
+                        debtors_creditors("Debtors & Creditors")
+                        data_bureau("Data Bureau")
+                        core_claim_engine("Core Claim Engine")
+                        bi_solutions("BI Solutions")
+                        tenant_db("Tenant DB")
+                    end
+                
+                    subgraph Unisolv 2.0
+                        claim_settlement("Claim Settlement Module")
+                        era_listener("ERA File Listener")
+                    end
+                
+                    operator([Operator])
+                
+                    operator -- Uses --> claim_settlement
+                    era_listener -- Forwards ERA Files --> claim_settlement
+                    claim_settlement -- Submits Processed Data --> bi_solutions
+                    claim_settlement -- Updates/Creates Accounts --> debtors_creditors
+                    claim_settlement -- Gets Connection Strings --> data_bureau
+                    claim_settlement -- Gets Patient Profiles --> tenant_db
+                    claim_settlement -- Syncs Claim Data --> core_claim_engine
+                </pre>
+             </div>
+        </template>
+        <template id="content-logging_in">
+            <h2 id="logging_in_anchor"><span>1.1 Logging In & Accessing</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+            <p>To begin any claim settlement task, you must first access the correct module within the Healthcare System.</p>
+            <ol>
+                <li><strong>Log in</strong> to the New Modernised Healthcare System using your provided credentials.</li>
+                <li>Once logged in, locate the main navigation menu, typically on the left side of the screen.</li>
+                <li>From the menu, click on <code>Claim Settlement</code> to enter the module.</li>
+            </ol>
+        </template>
+        <template id="content-dashboard">
+            <h2 id="dashboard_anchor"><span>1.2 Dashboard</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+            <p>The Claim Settlement Home Screen provides a real-time statistical overview of key financial metrics and operational activities. It is designed to give you a quick glance at the current state of your claim settlement process.</p>
+            <h4>Key Statistical Tiles Explained:</h4>
+            <ul>
+                <li><strong>Value of Claimed Scripts:</strong> Total monetary value of all scripts claimed within a selected timeframe.</li>
+                <li><strong>Unprocessed ERA Files:</strong> A count of Electronic Remittance Advice files received but not yet imported. This is a critical action item.</li>
+                <li><strong>Unallocated Bank Deposits:</strong> The number of recorded bank deposits not yet linked to a Payment Advice. This number should be kept as low as possible.</li>
+                <li><strong>Incomplete Allocation Documents:</strong> The number of Remittance documents that are in progress but not yet finalized (unallocated balance is not R0.00).</li>
+                <li><strong>Completed RAs:</strong> The number of Remittance Advices that have been fully processed and reconciled.</li>
+            </ul>
+        </template>
+        <template id="content-bank_statements_parent">
+            <h2 id="bank_statements_anchor"><span>1.3 Managing Bank Statements</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+            <p>The Bank Statement Register module allows for the reconciliation of payments received in the bank *before* you lock the corresponding Medical Aid Payment Advice, adding a crucial layer of financial control.</p>
+            <h3 id="bank_statements_overview_anchor">1.3.1 Bank Statement Register Overview</h3>
+            <p><strong>Access:</strong> Navigate to <code>Bank Statement Register</code> from the Claim Settlement menu.</p>
+            <p>The main overview screen provides a searchable data grid of all registered bank deposits. You can sort by any column and use the search bar to find specific entries by document number, reference, amount, or creator.</p>
+            <h3 id="bank_statements_excel_anchor">1.3.2 Bank Statement Excel Operations</h3>
+            <p>For high-volume transactions, importing from Excel is the most efficient method.</p>
+            <ol>
+                <li><strong>Download the Template:</strong> Use the <code>Excel Operations > Download Excel Template</code> button.</li>
+                <li><strong>Complete the Template:</strong> Open the `.xlsx` file. It is critical that all mandatory fields are filled correctly. The two most important validation rules are:
+                    <ul>
+                        <li>The date format must be <code>DD/MM/YYYY</code>. If the format is incorrect, the line will be rejected.</li>
+                        <li>The value in the `Deposit Amount` column must **exactly match** the value in the `Re-Enter Deposit Amount` column. Any mismatch will cause that line to fail during import.</li>
+                    </ul>
+                </li>
+                <li><strong>Import and Confirm:</strong> Use the <code>Excel Operations > Import from Excel</code> button. The system will display a confirmation screen showing which lines succeeded or failed. You must click **Confirm** to save the successful entries to the register.</li>
+            </ol>
+            <h3 id="bank_statements_manual_anchor">1.3.3 Manual Capturing of a Bank Statement</h3>
+            <p>For single deposits, click <code>+ Register New Deposit</code>. A pop-up screen will appear. Ensure all mandatory fields are completed accurately. The system will not allow you to save if the `Amount` and `Re-enter Amount` fields do not match.</p>
+        </template>
+        <template id="content-quiz">
+            <h2>Part 1 Quiz: Test Your Knowledge</h2>
+            <p>This quiz will test your understanding of the concepts covered in Part 1. You must achieve a score of 90% or higher to unlock Part 2.</p>
+            <div id="quizContainer" class="text-center mt-8"><button id="startQuizBtn" class="quiz-btn">Start Quiz</button></div>
+        </template>
+        <!-- Part 2 Templates -->
+        <template id="content-medical_aid_payments_parent">
+            <h2 id="med_aid_payments_anchor"><span>2.1 Medical Aid Payments</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+            <p>This is where the medical aid payments that are deposited into the Healthcare Practice's bank account are captured and locked for processing. Before creating a payment document, it is important to confirm the remittance has a corresponding payment on the bank statement. This section covers manual capture, ERA imports, and Excel uploads.</p>
+            <h3 id="med_aid_manual_anchor">2.1.1 Manual Capturing</h3>
+            <p>For individual remittances, you can manually capture the Medical Aid Payment Advice. Select "New Payment Advice" from the overview screen. You will need to enter the deposit date, pay office, payment method, reference, and the value of the payment (which must be entered twice for validation).</p>
+            <h3 id="med_aid_era_anchor">2.1.2 Electronic Remittance (ERA)</h3>
+            <p>To import an electronic remittance file, select "Import Remittance". The system will look for new ERA files. Once found, you can validate the file, which checks for errors and prints a report of exceptions, or import it directly. Importing creates a "Pending" Medical Aid Payment Advice which must be "Locked" to begin allocations.</p>
+            <h3 id="med_aid_excel_anchor">2.1.3 Excel Operations</h3>
+            <p>For bulk entries, you can download an Excel template, fill it with the required payment information, and upload it. The system validates the data, flagging any errors. Successful rows are then shown on a confirmation screen before final import.</p>
+        </template>
+        <template id="content-allocations">
+            <h2 id="allocations_anchor"><span>2.2 Allocations</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+            <p>Allocations are where you match the remittance lines provided by the medical aid against the system's claimed scripts. This process reconciles the payments received with the amounts claimed.</p>
+            <p>After a Medical Aid Payment Advice is locked, a corresponding Allocations document is created. You can then process this document by entering the script number from the remittance advice. The system will find the corresponding script and pre-populate the details. You simply enter the amount paid as per the remittance. If there is a short payment, you must enter the reason code provided by the medical aid.</p>
+        </template>
+        <template id="content-adjustments">
+            <h2 id="adjustments_anchor"><span>2.3 Adjustments</span><button class="gemini-btn" data-action="explain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A.75.75 0 0010 12.5a.75.75 0 00.75-.75v-.633a.75.75 0 00-.75-.75H9z" clip-rule="evenodd" /></svg> <span>Explain</span></button></h2>
+            <p>The Adjustments module is used to handle outstanding amounts from over or underpayments. After an Allocations file is completed, any lines with a balance other than zero will appear in the Adjustments overview.</p>
+            <p>For each line, the operator must decide how to adjust the outstanding amount:</p>
+            <ul>
+                <li><strong>Write Off (Discount/Other):</strong> For small discrepancies or fees that the practice will absorb.</li>
+                <li><strong>Transfer to Member:</strong> This charges the outstanding amount to the patient's debtor account. If no account exists, one can be created.</li>
+                <li><strong>Do Nothing Now / Resubmit:</strong> If further investigation is needed, the line can be skipped and addressed later.</li>
+            </ul>
+        </template>
+         <template id="content-quiz_part2">
+            <h2>Part 2 Quiz: Final Assessment</h2>
+            <p>This final quiz will test your understanding of the concepts covered in Part 2. You must achieve a score of 90% or higher to complete your certification.</p>
+            <div id="quizContainer" class="text-center mt-8"><button id="startQuizBtnPart2" class="quiz-btn">Start Final Quiz</button></div>
+        </template>
+    </div>
+
+    <script type="module">
+        mermaid.initialize({ startOnLoad: false });
+        const state = { quizData: [], userAnswers: [], currentQuestionIndex: 0, part2Unlocked: false };
+        const sections = [
+            // Part 1
+            { id: 'workflows', title: 'System Workflows' },
+            { id: 'logging_in', title: '1.1 Logging In' },
+            { id: 'dashboard', title: '1.2 Dashboard' },
+            { id: 'bank_statements_parent', title: '1.3 Managing Bank Statements',
+                subSections: [
+                    { id: 'bank_statements_overview', title: '1.3.1 Overview', anchor: 'bank_statements_overview_anchor' },
+                    { id: 'bank_statements_excel', title: '1.3.2 Excel Operations', anchor: 'bank_statements_excel_anchor' },
+                    { id: 'bank_statements_manual', title: '1.3.3 Manual Capture', anchor: 'bank_statements_manual_anchor' }
+                ]
+            },
+            { id: 'quiz', title: 'Part 1 Quiz' },
+            // Part 2
+            { id: 'medical_aid_payments_parent', title: '2.1 Medical Aid Payments', 
+                subSections: [
+                     { id: 'med_aid_manual', title: '2.1.1 Manual Capturing', anchor: 'med_aid_manual_anchor' },
+                     { id: 'med_aid_era', title: '2.1.2 Electronic Remittance (ERA)', anchor: 'med_aid_era_anchor' },
+                     { id: 'med_aid_excel', title: '2.1.3 Excel Operations', anchor: 'med_aid_excel_anchor' }
+                ]
+            },
+            { id: 'allocations', title: '2.2 Allocations'},
+            { id: 'adjustments', title: '2.3 Adjustments'},
+            { id: 'quiz_part2', title: 'Part 2 Quiz'}
+        ];
+
+        const sidebarNav = document.getElementById('sidebarNav');
+        const dynamicContentArea = document.getElementById('dynamicContentArea');
+        const mainContent = document.getElementById('mainContent');
+        const geminiModal = document.getElementById('geminiModal');
+        const appContainer = document.getElementById('app-container');
+        const contentWrapper = document.getElementById('content-wrapper');
+
+        function updateActiveLink(sectionId) {
+            document.querySelectorAll('.sidebar-link.active').forEach(l => l.classList.remove('active'));
+            const newActiveLink = document.querySelector(`.sidebar-link[data-id="${sectionId}"]`);
+            if (newActiveLink) {
+                newActiveLink.classList.add('active');
+                const parentMenu = newActiveLink.closest('.sidebar-submenu');
+                if (parentMenu) {
+                    const parentLink = parentMenu.previousElementSibling;
+                    if(parentLink?.classList.contains('sidebar-link')){
+                        parentLink.classList.add('active', 'expanded');
+                        parentMenu.classList.add('expanded');
+                    }
+                }
+            }
+        }
+        
+        async function displaySection(sectionId, isSubSection = false) {
+            let parentSectionId;
+            let templateId;
+            
+            if (isSubSection) {
+                const parent = sections.find(p => p.subSections?.some(s => s.anchor === sectionId));
+                if (!parent) return;
+                parentSectionId = parent.id;
+                templateId = `content-${parent.id}`;
+            } else {
+                parentSectionId = sectionId;
+                templateId = `content-${sectionId}`;
+            }
+
+            const template = document.getElementById(templateId);
+            if (!template) return; 
+
+            const currentLoadedSection = dynamicContentArea.querySelector('.content-section');
+            if (!currentLoadedSection || currentLoadedSection.dataset.sectionId !== parentSectionId) {
+                dynamicContentArea.innerHTML = `<div class="content-section" data-section-id="${parentSectionId}">${template.innerHTML}</div>`;
+                if (parentSectionId !== 'quiz' && parentSectionId !== 'quiz_part2') {
+                    const aiFeatures = document.getElementById('ai-features-template').cloneNode(true);
+                    aiFeatures.removeAttribute('id');
+                    dynamicContentArea.querySelector('.content-section').appendChild(aiFeatures);
+                }
+            }
+            
+            if (isSubSection) {
+                requestAnimationFrame(() => {
+                    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            } else {
+                 mainContent.scrollTo(0, 0);
+            }
+            
+            if(parentSectionId === 'workflows'){
+                await mermaid.run();
+                const diagram = document.getElementById('context-diagram');
+                if(diagram) diagram.addEventListener('click', showDiagramModal);
+            }
+            updateActiveLink(sectionId);
+        }
+        
+        function showDiagramModal() {
+            const diagramCode = document.getElementById('context-diagram').innerText;
+            geminiModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modalTitle" class="modal-title">System Context Diagram</h3>
+                        <button id="modalCloseBtn" class="modal-close-btn">&times;</button>
+                    </div>
+                    <div id="modalBody" class="modal-body flex justify-center"><pre class="mermaid">${diagramCode}</pre></div>
+                </div>`;
+            geminiModal.classList.add('visible');
+            mermaid.run();
+            document.getElementById('modalCloseBtn').onclick = () => geminiModal.classList.remove('visible');
+            geminiModal.onclick = (e) => { if (e.target === geminiModal) geminiModal.classList.remove('visible'); };
+        }
+
+        function buildSidebar() {
+            let part1Html = `<h3 class="px-6 pt-4 pb-2 text-sm font-semibold text-gray-400 uppercase tracking-wider">Part 1: The Basics</h3>`;
+            let part2Html = `<h3 class="px-6 pt-4 pb-2 text-sm font-semibold text-gray-400 uppercase tracking-wider">Part 2: Medical Aid Payments</h3>`;
+
+            sections.forEach(navItem => {
+                let isPart2 = navItem.title.startsWith('2.');
+                let isDisabled = isPart2 && !state.part2Unlocked;
+                let linkClass = `sidebar-link ${isDisabled ? 'disabled' : ''}`;
+                
+                let linkHtml = `<a href="#" class="${linkClass}" data-id="${navItem.id}"><span>${navItem.title}</span>`;
+                if (navItem.subSections) {
+                    linkHtml += `<span class="toggle-icon"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>`;
+                }
+                linkHtml += `</a>`;
+                
+                let subMenuHtml = '';
+                if (navItem.subSections) {
+                    subMenuHtml = `<ul class="sidebar-submenu">`;
+                    navItem.subSections.forEach(subNavItem => {
+                        subMenuHtml += `<li><a href="#" class="sidebar-link" data-id="${subNavItem.anchor}" role="button">${subNavItem.title}</a></li>`;
+                    });
+                    subMenuHtml += `</ul>`;
+                }
+                
+                let fullLink = `<div data-parent-id="${navItem.id}">${linkHtml}${subMenuHtml}</div>`;
+
+                if (isPart2) {
+                    part2Html += fullLink;
+                } else {
+                    part1Html += fullLink;
+                }
+            });
+            sidebarNav.innerHTML = part1Html + part2Html;
+        }
+        
+        document.getElementById('begin-training-btn').addEventListener('click', () => {
+            appContainer.classList.add('training-active');
+            setTimeout(() => {
+                contentWrapper.style.opacity = '1';
+                displaySection('workflows'); 
+            }, 100); 
+        });
+
+        sidebarNav.addEventListener('click', (e) => {
+            e.preventDefault();
+            const link = e.target.closest('.sidebar-link');
+            if (!link || link.classList.contains('disabled')) return;
+            const navItemId = link.dataset.id;
+            
+            const navItem = sections.find(item => item.id === navItemId);
+
+            if (navItem?.subSections) {
+                link.classList.toggle('expanded');
+                link.nextElementSibling?.classList.toggle('expanded');
+            }
+            
+            const isSubSection = sections.some(s => s.subSections?.some(sub => sub.anchor === navItemId));
+            displaySection(navItemId, isSubSection);
+        });
+        
+        contentWrapper.addEventListener('click', function(e) {
+            const geminiBtn = e.target.closest('.gemini-btn');
+            const aiFeatureBtn = e.target.closest('.ai-feature-btn');
+            const startQuizBtn = e.target.closest('#startQuizBtn');
+            const startQuizBtnPart2 = e.target.closest('#startQuizBtnPart2');
+
+            if (startQuizBtn) {
+                generateQuiz();
+                return;
+            }
+            if (startQuizBtnPart2) {
+                generateQuizPart2();
+                return;
+            }
+
+            if (geminiBtn) {
+                 const sectionEl = geminiBtn.closest('.content-section');
+                 const sectionId = sectionEl.dataset.sectionId;
+                 const sectionData = sections.find(s => s.id === sectionId) || sections.find(s => s.subSections?.some(sub => sub.id === sectionId));
+                 if (!sectionData) return;
+                 const prompt = `Explain the following training material for a new operator. Use simple terms and provide a practical example. Material: "${sectionEl.innerText}"`
+                 callGemini(prompt, null, `Explaining: ${sectionData.title}`);
+                 return
+            }
+            
+            if(aiFeatureBtn) {
+                const action = aiFeatureBtn.dataset.aiAction;
+                const sectionEl = aiFeatureBtn.closest('.content-section');
+                const sectionId = sectionEl.dataset.sectionId;
+                const sectionData = sections.find(s => s.id === sectionId) || sections.find(s => s.subSections?.some(sub => sub.id === sectionId));
+                if (!sectionData) return;
+
+                if(action === 'summarize') {
+                    const prompt = `You are a corporate training assistant. Summarize the key takeaways from the following section of a Unisolv 2.0 training manual titled "${sectionData.title}". The summary should be a concise, easy-to-read bulleted list. Section content: "${sectionEl.innerText}"`;
+                    callGemini(prompt, null, "Summary");
+                } 
+                if (action === 'scenario') {
+                    const prompt = `You are a training supervisor. Create a realistic problem scenario for a new Unisolv 2.0 operator based on the following training material section: "${sectionEl.innerText}". The scenario should be a short paragraph describing a plausible, challenging problem. Do not provide the solution or any hints in your response. Just state the problem.`;
+                    handleScenario(prompt, sectionEl.innerText);
+                }
+            }
+        });
+
+
+       async function handleScenario(prompt, sectionText) {
+            const scenario = await callGemini(prompt, null, "Training Scenario");
+            if (scenario) {
+                const modalBody = document.getElementById('modalBody');
+                const revealBtn = document.createElement('button');
+                revealBtn.className = 'quiz-btn mt-6';
+                revealBtn.textContent = 'Reveal Suggested Steps';
+                modalBody.appendChild(revealBtn);
+
+                revealBtn.addEventListener('click', async () => {
+                    revealBtn.remove();
+                    modalBody.innerHTML += '<div class="flex justify-center items-center h-32"><div class="loader"></div></div>';
+                    const solutionPrompt = `Based on the following scenario and the provided training material, what are the ideal next steps an operator should take? Provide a clear, step-by-step answer formatted with Markdown. Scenario: "${scenario}". Training Material: "${sectionText}"`;
+                    await callGemini(solutionPrompt, null, "Suggested Steps");
+                });
+            }
+        }
+
+
+       async function callGemini(prompt, jsonSchema = null, title = "AI Assistant") {
+            const isForModal = !jsonSchema;
+            let container;
+
+            if (isForModal) {
+                geminiModal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modalTitle" class="modal-title">${title}</h3>
+                            <button id="modalCloseBtn" class="modal-close-btn">&times;</button>
+                        </div>
+                        <div id="modalBody" class="modal-body"><div class="flex justify-center items-center h-32"><div class="loader"></div></div></div>
+                    </div>`;
+                geminiModal.classList.add('visible');
+                document.getElementById('modalCloseBtn').onclick = () => geminiModal.classList.remove('visible');
+                geminiModal.onclick = (e) => { if (e.target === geminiModal) geminiModal.classList.remove('visible'); };
+                container = document.getElementById('modalBody');
+            } else {
+                container = document.getElementById('quizContainer');
+            }
+            
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            if (jsonSchema) {
+                payload.generationConfig = { responseMimeType: "application/json", responseSchema: jsonSchema };
+            }
+            
+            const apiKey = ""; // Handled by execution environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                if (!result.candidates?.length) throw new Error('No valid response from API.');
+                
+                const text = result.candidates[0].content.parts[0].text;
+                if (jsonSchema) {
+                    return JSON.parse(text);
+                } else {
+                    const html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^- (.*$)/gm, '<ul><li>$1</li></ul>').replace(/<\/ul>\n<ul>/g, '');
+                    container.innerHTML = html;
+                    return text; 
+                }
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                container.innerHTML = `<p class="text-red-600"><strong>Error:</strong> Could not get a response from the AI assistant. Please try again later.</p>`;
+                return null;
+            }
+        }
+        
+        async function generateQuiz(isPart2 = false) {
+            const quizContainer = document.getElementById('quizContainer');
+            quizContainer.innerHTML = '<div class="flex flex-col justify-center items-center h-32 gap-4"><div class="loader"></div><p class="text-center text-gray-600">Generating your personalized quiz...</p></div>';
+            
+            const trainingTopics = isPart2 
+                ? sections.filter(s => s.title.startsWith('2.') && s.id !== 'quiz_part2').map(s => s.title).join(', ')
+                : sections.filter(s => s.id !== 'quiz' && !s.title.startsWith('2.')).map(s => s.title).join(', ');
+                
+            const prompt = `Based on a training manual for a "Unisolv 2.0" system covering the topics: ${trainingTopics}, generate a 10-question multiple-choice quiz. For each question, provide 3-4 options and clearly indicate the single correct answer. The questions should be practical and test a user's understanding of the key concepts for an operator certification exam.`;
+            const quizSchema = { type: "ARRAY", items: { type: "OBJECT", properties: { "question": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "answer": { "type": "STRING" } }, required: ["question", "options", "answer"] } };
+            
+            const data = await callGemini(prompt, quizSchema);
+            if (data?.length > 0) {
+                state.quizData = data;
+                state.userAnswers = new Array(data.length).fill(null);
+                state.currentQuestionIndex = 0;
+                displayQuiz(isPart2);
+            } else {
+                quizContainer.innerHTML = `<p class="text-red-500 text-center font-semibold">Failed to generate the quiz.</p><p class="text-center text-gray-600 mt-2">Please try again.</p><button id="${isPart2 ? 'startQuizBtnPart2' : 'startQuizBtn'}" class="quiz-btn mt-4">Try Again</button>`;
+            }
+        }
+
+        function generateQuizPart2() {
+            generateQuiz(true);
+        }
+
+        function displayQuiz(isPart2 = false) {
+            const quizContainer = document.getElementById('quizContainer');
+            quizContainer.innerHTML = `<div id="quizCard"><div id="quizProgress" class="text-right"></div><div id="questionContainer"></div><div class="quiz-navigation"><button id="prevBtn" class="quiz-nav-btn secondary">Previous</button><button id="nextBtn" class="quiz-nav-btn">Next</button><button id="submitBtn" class="quiz-btn" style="display:none;" data-quiz-part="${isPart2 ? '2' : '1'}">Submit Answers</button></div></div>`;
+            showQuestion(state.currentQuestionIndex, isPart2);
+
+            document.getElementById('quizCard').addEventListener('click', (e) => {
+                if (e.target.id === 'prevBtn') showQuestion(--state.currentQuestionIndex, isPart2);
+                if (e.target.id === 'nextBtn') showQuestion(++state.currentQuestionIndex, isPart2);
+                if (e.target.id === 'submitBtn') checkAnswers(isPart2);
+            });
+        }
+        
+        function showQuestion(index, isPart2) {
+            const question = state.quizData[index];
+            const questionContainer = document.getElementById('questionContainer');
+            
+            const optionsHtml = question.options.map((option, i) => {
+                const isChecked = state.userAnswers[index] === option ? 'checked' : '';
+                return `<li class="option-item"><input type="radio" name="question${index}" value="${option}" id="q${index}o${i}" class="sr-only" ${isChecked}><label for="q${index}o${i}">${option}</label></li>`;
+            }).join('');
+
+            questionContainer.innerHTML = `<div class="question-box"><p class="question-text">Question ${index + 1}: ${question.question}</p><ul class="options-list">${optionsHtml}</ul></div>`;
+            
+            questionContainer.querySelector('.options-list').onchange = (e) => {
+                if(e.target.type === 'radio') state.userAnswers[index] = e.target.value;
+            };
+
+            document.getElementById('quizProgress').textContent = `Question ${index + 1} of ${state.quizData.length}`;
+            document.getElementById('prevBtn').style.display = index === 0 ? 'none' : 'inline-flex';
+            document.getElementById('nextBtn').style.display = index === state.quizData.length - 1 ? 'none' : 'inline-flex';
+            document.getElementById('submitBtn').style.display = index === state.quizData.length - 1 ? 'inline-flex' : 'none';
+        }
+
+        function checkAnswers(isPart2) {
+            const score = state.quizData.reduce((acc, q, i) => acc + (state.userAnswers[i] === q.answer ? 1 : 0), 0);
+            const percentage = (score / state.quizData.length) * 100;
+            
+            let resultHeader;
+            if (percentage >= 90) {
+                 if(isPart2) {
+                    resultHeader = `<div id="quizResult" class="pass"><h3>Congratulations! You have completed the certification!</h3><p>Your score: ${percentage.toFixed(0)}%</p></div>`;
+                } else {
+                    resultHeader = `<div id="quizResult" class="pass"><h3>Congratulations! You passed!</h3><p>Your score: ${percentage.toFixed(0)}%</p><p>Part 2 is now unlocked.</p></div>`;
+                    unlockNextPart();
+                }
+            } else {
+                resultHeader = `<div id="quizResult" class="fail"><h3>Almost there!</h3><p>Your score: ${percentage.toFixed(0)}% (90% required)</p><p>Please review the material and try again.</p><button id="${isPart2 ? 'startQuizBtnPart2' : 'startQuizBtn'}" class="quiz-btn mt-4">Retake Quiz</button></div>`;
+            }
+
+            const resultsHtml = state.quizData.map((q, index) => {
+                const isCorrect = state.userAnswers[index] === q.answer;
+                const optionsHtml = q.options.map(option => {
+                    const isCorrectAnswer = option === q.answer;
+                    const isSelected = state.userAnswers[index] === option;
+                    let labelClass = isCorrectAnswer ? 'correct' : (isSelected ? 'incorrect' : '');
+                    return `<li class="option-item"><label class="${labelClass}">${option}</label></li>`;
+                }).join('');
+                return `<div class="question-box ${isCorrect ? 'correct-answer' : 'incorrect-answer'}"><p class="question-text">Question ${index + 1}: ${q.question}</p><ul class="options-list">${optionsHtml}</ul></div>`;
+            }).join('');
+
+            const quizContainer = document.getElementById('quizContainer');
+            quizContainer.innerHTML = resultHeader + resultsHtml;
+            quizContainer.classList.add('results-view');
+            
+            document.getElementById('retakeQuizBtn')?.addEventListener('click', () => generateQuiz(isPart2));
+        }
+
+        function unlockNextPart() {
+             state.part2Unlocked = true;
+             buildSidebar(); // Rebuild to update styles
+        }
+
+        buildSidebar(); // Build the sidebar on initial load
+    </script>
+</body>
+</html>
